@@ -48,7 +48,19 @@ async def run_server():
 
     pc = RTCPeerConnection()
     pc.addTrack(BouncingBallTrack())
+    print("Track being sent")
 
+
+    data_channel = pc.createDataChannel("coordinates")
+
+    @pc.on("datachannel")
+    async def on_datachannel(channel):
+        print("Data Channel received")
+        @channel.on("message")
+        async def on_message(message):
+            print(f"Received coordinates: {message}")
+
+            
     offer = await pc.createOffer()
     await pc.setLocalDescription(offer)
     await signaling.send(pc.localDescription)
@@ -62,8 +74,17 @@ async def run_server():
 
     print("Connection established")
 
+
     # Keep the server running
-    await pc.close()
+    try:
+        await asyncio.Future()
+    finally:
+        await pc.close()
+
+
+
+    # Keep the server running
+    #await pc.close()
 
 if __name__ == '__main__':
     asyncio.run(run_server())
