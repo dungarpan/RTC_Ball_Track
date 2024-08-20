@@ -1,9 +1,12 @@
-import asyncio
-import cv2
-import numpy as np
+# This is the server.py file
+
 from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
 from aiortc.contrib.signaling import TcpSocketSignaling
+import asyncio
 import av
+import cv2
+import math
+import numpy as np
 import random
 
 class BouncingBallTrack(VideoStreamTrack):
@@ -42,12 +45,20 @@ class BouncingBallTrack(VideoStreamTrack):
         video_frame.time_base = time_base
         return video_frame
 
+
+def calculate_rmse(received_x, received_y, actual_x, actual_y):
+    error_x = actual_x - received_x
+    error_y = actual_y - received_y
+    rmse = math.sqrt(error_x**2 + error_y**2)
+    return rmse
+
 async def run_server():
     signaling = TcpSocketSignaling('localhost', 1234)
     await signaling.connect()
 
     pc = RTCPeerConnection()
-    pc.addTrack(BouncingBallTrack())
+    track = BouncingBallTrack()
+    pc.addTrack(track)
     print("Track being sent")
 
 
@@ -56,9 +67,27 @@ async def run_server():
     @pc.on("datachannel")
     async def on_datachannel(channel):
         print("Data Channel received")
+
         @channel.on("message")
         async def on_message(message):
-            print(f"Received coordinates: {message}")
+            try:
+                # Parse the received coordinates
+                received_x, received_y = map(int, message.split(','))
+                actual_x, actual_y = track.ball_pos
+
+                # Compute the error
+                error_x = actual_x - received_x
+                error_y = actual_y - received_y
+                rmse = calculate_rmse(received_x, received_y, actual_x, actual_y):
+
+                # Display the results
+                print(f"Received coordinates: ({received_x}, {received_y})")
+                print(f"Actual coordinates: ({actual_x}, {actual_y})")
+                print(f"Error: ({error_x}, {error_y})")
+                print(f"RMSE Error: {rmse}")
+                print("-------------------------------------\n")
+            except Exception as e:
+                print(f"Error processing message: {e}")
 
             
     offer = await pc.createOffer()

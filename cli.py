@@ -1,7 +1,9 @@
-import asyncio
-import cv2
+# This is the client.py file
+
 from aiortc import RTCPeerConnection, RTCSessionDescription
 from aiortc.contrib.signaling import TcpSocketSignaling
+import asyncio
+import cv2
 from multiprocessing import Process, Queue, Value
 import numpy as np
 
